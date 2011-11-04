@@ -1,0 +1,6 @@
+*.py[c|o|b]
+*~
+*.db
+*.project
+*.pydevproject
+.hg
