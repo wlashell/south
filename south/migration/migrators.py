@@ -87,7 +87,12 @@ class Migrator(object):
             print "Error in migration: %s" % migration
             raise
         else:
-            south.db.db.commit_transaction()
+            try:
+                south.db.db.commit_transaction()
+            except:
+                print "Error during commit in migration: %s" % migration
+                raise
+                
 
     def run(self, migration):
         # Get the correct ORM.
@@ -263,7 +268,11 @@ class Forwards(Migrator):
     def record(migration, database):
         # Record us as having done this
         record = MigrationHistory.for_migration(migration, database)
-        record.applied = datetime.datetime.utcnow()
+        try:
+            from django.utils.timezone import now
+            record.applied = now()
+        except ImportError:
+            record.applied = datetime.datetime.utcnow()
         if database != DEFAULT_DB_ALIAS:
             record.save(using=database)
         else:
