@@ -122,11 +122,12 @@ class DatabaseOperations(object):
             cursor.execute('CREATE TABLE DDL_TRANSACTION_TEST (X INT)')
             self.rollback_transaction()
             try:
-                cursor.execute('CREATE TABLE DDL_TRANSACTION_TEST (X INT)')
-            except exceptions:
-                return False
-            else:
-                return True
+                try:
+                    cursor.execute('CREATE TABLE DDL_TRANSACTION_TEST (X INT)')
+                except exceptions:
+                    return False
+                else:
+                    return True
             finally:
                 cursor.execute('DROP TABLE DDL_TRANSACTION_TEST')
         else:
@@ -336,6 +337,10 @@ class DatabaseOperations(object):
 
         if len(table_name) > 63:
             print "   ! WARNING: You have a table name longer than 63 characters; this will not fully work on PostgreSQL or MySQL."
+
+        # avoid default values in CREATE TABLE statements (#925)
+        for field_name, field in fields:
+            field._suppress_default = True
 
         columns = [
             self.column_sql(table_name, field_name, field)
@@ -807,7 +812,7 @@ class DatabaseOperations(object):
         """
 
         # If there is just one column in the index, use a default algorithm from Django
-        if len(column_names) == 1:
+        if len(column_names) == 1 and not suffix:
             return truncate_name(
                 '%s_%s' % (table_name, self._digest(column_names[0])),
                 self._get_connection().ops.max_name_length()
